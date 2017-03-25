@@ -1,11 +1,13 @@
+/* global window */
 import classNames from 'classnames';
 import React, { PropTypes } from 'react';
 import { compose } from 'redux';
 import { connect } from 'react-redux';
 
 import InstallSwitch from 'core/components/InstallSwitch';
-import { ADDON_TYPE_THEME } from 'core/constants';
+import { ADDON_TYPE_OPENSEARCH, ADDON_TYPE_THEME } from 'core/constants';
 import translate from 'core/i18n/translate';
+import log from 'core/logger';
 import { getThemeData } from 'core/themePreview';
 import {
   getClientCompatibility as _getClientCompatibility,
@@ -50,7 +52,11 @@ export class InstallButtonBase extends React.Component {
       size,
       userAgentInfo,
     } = this.props;
-    const useButton = hasAddonManager !== undefined && !hasAddonManager;
+
+    // OpenSearch plugins display their own prompt so using the "Add to Firefox"
+    // button regardless on mozAddonManager support is a better UX.
+    const useButton = (hasAddonManager !== undefined && !hasAddonManager) ||
+      addon.type === ADDON_TYPE_OPENSEARCH;
     let button;
 
     const { compatible } = getClientCompatibility({
@@ -70,6 +76,32 @@ export class InstallButtonBase extends React.Component {
           size={size}
           className={buttonClass}>
           {i18n.gettext('Install Theme')}
+        </Button>
+      );
+    } else if (addon.type === ADDON_TYPE_OPENSEARCH) {
+      const onClick = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (
+          !buttonIsDisabled && window.external &&
+          'AddSearchProvider' in window.external
+        ) {
+          log.info('Adding OpenSearch Provider', { addon });
+          window.external.AddSearchProvider(addon.installURL);
+        }
+
+        return false;
+      };
+      button = (
+        <Button
+          className={classNames('Button', buttonClass)}
+          disabled={buttonIsDisabled}
+          onClick={onClick}
+          size={size}
+          to={addon.installURL}
+        >
+          {i18n.gettext('Add to Firefox')}
         </Button>
       );
     } else {

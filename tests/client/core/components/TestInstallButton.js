@@ -6,6 +6,7 @@ import { InstallButtonBase } from 'core/components/InstallButton';
 import InstallSwitch from 'core/components/InstallSwitch';
 import {
   ADDON_TYPE_EXTENSION,
+  ADDON_TYPE_OPENSEARCH,
   ADDON_TYPE_THEME,
   INCOMPATIBLE_NOT_FIREFOX,
   UNKNOWN,
@@ -154,5 +155,39 @@ describe('<InstallButton />', () => {
     const buttonComponent = root.props.children[1];
     assert.equal(buttonComponent.type, Button);
     assert.strictEqual(buttonComponent.props.disabled, true);
+  });
+
+  it('renders a button for OpenSearch regardless of mozAddonManager', () => {
+    const root = render({
+      addon: {
+        ...fakeAddon,
+        hasAddonManager: true,
+        type: ADDON_TYPE_OPENSEARCH,
+      },
+    });
+
+    assert.equal(root.type, 'div');
+    const buttonComponent = root.props.children[1];
+    assert.equal(buttonComponent.type, Button);
+    assert.equal(buttonComponent.props.className,
+      'Button InstallButton-button');
+    assert.equal(buttonComponent.props.children, 'Add to Firefox');
+  });
+
+  it('disables the OpenSearch button if not compatible', () => {
+    const root = render({
+      addon: {
+        ...fakeAddon,
+        type: ADDON_TYPE_OPENSEARCH,
+      },
+      getClientCompatibility: () => ({ compatible: false, reason: null }),
+    });
+
+    assert.equal(root.type, 'div');
+    const buttonComponent = root.props.children[1];
+    assert.equal(buttonComponent.type, Button);
+    assert.equal(buttonComponent.props.className,
+      'Button InstallButton-button InstallButton-button--disabled');
+    assert.equal(buttonComponent.props.children, 'Add to Firefox');
   });
 });
